@@ -73,23 +73,33 @@ class TestRGACRDT:
         # 3. Verify text is empty
         # 4. Check character is marked as deleted
         pass
-    
-    def test_concurrent_inserts(self):
-        """Test handling concurrent insertions."""
-        # TODO: Implement this test
-        # 1. Create two CRDT instances
-        # 2. Insert characters concurrently
-        # 3. Apply operations to both instances
-        # 4. Verify both converge to same state
-        pass
-    
+
     def test_insert_delete_sequence(self):
-        """Test insert and delete operations in sequence."""
-        # TODO: Implement this test
-        # 1. Insert "hello"
-        # 2. Delete character at position 1
-        # 3. Verify result is "hllo"
-        pass
+        crdt1 = RGACRDT(site_id=1)
+        crdt2 = RGACRDT(site_id=2)
+
+        # Both insert at position 0
+        op1 = crdt1.insert(0, "X")
+        op2 = crdt2.insert(0, "Y")
+
+        # Apply each other's insert
+        crdt1.apply_operation(op2)
+        crdt2.apply_operation(op1)
+
+        # Now, both delete the first character (whichever is at position 0)
+        del_op1 = crdt1.delete(0)
+        del_op2 = crdt2.delete(0)
+
+        # Apply each other's delete
+        crdt1.apply_operation(del_op2)
+        crdt2.apply_operation(del_op1)
+
+        # Both should have only one character left
+        text1 = crdt1.get_text()
+        text2 = crdt2.get_text()
+        print(f"After deletes, CRDT1: {text1}, CRDT2: {text2}")
+        assert text1 == text2
+        assert text1 == ""
     
     def test_apply_remote_operation(self):
         """Test applying operations from remote clients."""

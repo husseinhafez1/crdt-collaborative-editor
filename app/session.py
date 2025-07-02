@@ -22,103 +22,40 @@ import json
 import logging
 from typing import Dict, Set, Optional
 from fastapi import WebSocket, WebSocketDisconnect
+from app.metrics import crdt_operations_total, active_sessions, crdt_conflicts_resolved
 
-
-class SessionManager:
-    """
-    Manages WebSocket sessions for collaborative editing.
+class SessionManager:    
+    def __init__(self, document):
+        self.active_sessions = {}
+        self.document = document
     
-    This class handles client connections, message broadcasting,
-    and session lifecycle management.
-    """
+    async def add_session(self, client_id: str, websocket: WebSocket):
+        await websocket.accept()
+        await websocket.send_json(self.document.get_state())
+        self.active_sessions[client_id] = websocket
+        active_sessions.inc()
     
-    def __init__(self):
-        """Initialize the session manager."""
-        # TODO: Implement this method
-        # 1. Initialize active sessions dict
-        # 2. Set up logging
-        # 3. Initialize any metrics/counters
-        pass
-    
-    def add_session(self, client_id: str, websocket: WebSocket):
-        """
-        Add a new client session.
-        
-        Args:
-            client_id: Unique identifier for the client
-            websocket: WebSocket connection object
-        """
-        # TODO: Implement this method
-        # 1. Store websocket connection
-        # 2. Add client to active sessions
-        # 3. Log connection
-        pass
-    
-    def remove_session(self, client_id: str):
-        """
-        Remove a client session.
-        
-        Args:
-            client_id: ID of the client to remove
-        """
-        # TODO: Implement this method
-        # 1. Close websocket connection
-        # 2. Remove from active sessions
-        # 3. Log disconnection
-        pass
+    async def remove_session(self, client_id: str):
+        websocket = self.active_sessions.pop(client_id, None)
+        if websocket:
+            await websocket.close()
+        active_sessions.dec()
     
     async def broadcast(self, message: dict, exclude_client: str = None):
-        """
-        Broadcast a message to all connected clients.
-        
-        Args:
-            message: Message to broadcast
-            exclude_client: Client ID to exclude from broadcast
-        """
-        # TODO: Implement this method
-        # 1. Iterate through active sessions
-        # 2. Send message to each client (except excluded)
-        # 3. Handle any send failures
-        pass
+        for cid, ws in self.active_sessions.items():
+            if cid != exclude_client:
+                await ws.send_json(message)
     
     async def send_to_client(self, client_id: str, message: dict):
-        """
-        Send a message to a specific client.
-        
-        Args:
-            client_id: ID of the target client
-            message: Message to send
-        """
-        # TODO: Implement this method
-        # 1. Check if client is connected
-        # 2. Send message via websocket
-        # 3. Handle send failures
-        pass
+        ws = self.active_sessions.get(client_id)
+        if ws:
+            await ws.send_json(message)
     
     def get_active_clients(self) -> Set[str]:
-        """
-        Get set of active client IDs.
-        
-        Returns:
-            Set of active client IDs
-        """
-        # TODO: Implement this method
-        # 1. Return set of active client IDs
-        pass
+        return set(self.active_sessions.keys())
     
     def is_client_connected(self, client_id: str) -> bool:
-        """
-        Check if a client is currently connected.
-        
-        Args:
-            client_id: ID of the client to check
-            
-        Returns:
-            True if client is connected, False otherwise
-        """
-        # TODO: Implement this method
-        # 1. Check if client_id exists in active sessions
-        pass
+        return client_id in self.active_sessions
     
     async def handle_websocket_connection(self, websocket: WebSocket, client_id: str):
         """

@@ -29,18 +29,16 @@ from typing import Dict, Any
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
-from prometheus_client import Counter, Gauge, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from app.session import SessionManager
+from app.document import Document
+from fastapi.responses import JSONResponse
+from fastapi.responses import Response
+from app.metrics import crdt_operations_total, active_sessions, crdt_conflicts_resolved
 
-# TODO: Import your modules
-# from .document import Document
-# from .session import SessionManager
-
-# Initialize FastAPI app
-app = FastAPI(
-    title="CRDT Collaborative Editor",
-    description="A real-time collaborative text editor using CRDTs",
-    version="1.0.0"
-)
+app = FastAPI()
+document = Document()
+session_manager = SessionManager(document)
 
 # Add CORS middleware
 app.add_middleware(
@@ -50,15 +48,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# TODO: Initialize global instances
-# document = Document()
-# session_manager = SessionManager()
-
-# Prometheus metrics
-crdt_operations_total = Counter('crdt_operations_total', 'Total CRDT operations', ['operation_type'])
-crdt_conflicts_resolved = Counter('crdt_conflicts_resolved', 'Number of conflicts resolved')
-active_sessions = Gauge('active_sessions', 'Number of active WebSocket sessions')
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -77,62 +66,34 @@ async def root():
 
 @app.get("/api/document")
 async def get_document():
-    """
-    Get the current state of the document.
-    
-    Returns:
-        Document state including text and metadata
-    """
-    # TODO: Implement this method
-    # 1. Get document state from Document instance
-    # 2. Return JSON response
-    pass
+    return JSONResponse(content=document.get_state())
 
 
 @app.post("/api/document/reset")
 async def reset_document():
-    """
-    Reset the document to empty state.
-    
-    Returns:
-        Confirmation message
-    """
-    # TODO: Implement this method
-    # 1. Reset document
-    # 2. Notify all connected clients
-    # 3. Return confirmation
-    pass
+    document.reset()
+    await session_manager.broadcast(document.get_state())
+    return {"message": "Document reset"}
 
 
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
-    """
-    WebSocket endpoint for real-time collaboration.
-    
-    Args:
-        websocket: WebSocket connection
-        client_id: Unique identifier for the client
-    """
-    # TODO: Implement this method
-    # 1. Accept WebSocket connection
-    # 2. Add client to session manager
-    # 3. Handle incoming messages
-    # 4. Clean up on disconnect
-    pass
+    await session_manager.add_session(client_id, websocket)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            document.apply_operation(data)
+            await session_manager.broadcast(data, exclude_client=client_id)
+    except WebSocketDisconnect:
+        await session_manager.remove_session(client_id)
+    except Exception as e:
+        logger.error(f"Error in WebSocket endpoint: {e}")
+        await session_manager.remove_session(client_id)
 
 
 @app.get("/metrics")
 async def metrics():
-    """
-    Prometheus metrics endpoint.
-    
-    Returns:
-        Prometheus metrics in text format
-    """
-    # TODO: Implement this method
-    # 1. Return Prometheus metrics
-    # 2. Set appropriate content type
-    pass
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 # TODO: Add helper functions for:

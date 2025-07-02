@@ -31,50 +31,16 @@ class Document:
     """
     
     def __init__(self):
-        """Initialize a new collaborative document."""
-        # TODO: Implement this method
-        # 1. Create a CRDT instance for the document
-        # 2. Initialize client tracking
-        # 3. Set up operation history (optional)
-        pass
+        self.crdt = RGACRDT(site_id=0)
     
-    def apply_operation(self, operation: dict, client_id: str) -> dict:
-        """
-        Apply an operation from a client and broadcast to others.
-        
-        Args:
-            operation: Operation dict with type, position, char, etc.
-            client_id: ID of the client sending the operation
-            
-        Returns:
-            Updated document state
-        """
-        # TODO: Implement this method
-        # 1. Validate the operation
-        # 2. Apply operation to CRDT
-        # 3. Broadcast to other clients
-        # 4. Return updated state
-        pass
+    def apply_operation(self, operation: dict) -> dict:
+        self.crdt.apply_operation(operation)
     
     def get_state(self) -> dict:
-        """
-        Get the current state of the document.
-        
-        Returns:
-            Dict containing document text and metadata
-        """
-        # TODO: Implement this method
-        # 1. Get text from CRDT
-        # 2. Return state dict with text and metadata
-        pass
+        return {"text": self.crdt.get_text()}
     
     def reset(self):
-        """Reset the document to empty state."""
-        # TODO: Implement this method
-        # 1. Create new CRDT instance
-        # 2. Clear client tracking
-        # 3. Notify all clients of reset
-        pass
+        self.crdt = RGACRDT(site_id=0)
     
     def add_client(self, client_id: str):
         """

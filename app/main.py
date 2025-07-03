@@ -35,15 +35,18 @@ from app.document import Document
 from fastapi.responses import JSONResponse
 from fastapi.responses import Response
 from app.metrics import crdt_operations_total, active_sessions, crdt_conflicts_resolved
+from app.redis_pubsub import RedisPubSub
+
 
 app = FastAPI()
 document = Document()
+redis_pubsub = RedisPubSub(document)
 session_manager = SessionManager(document)
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,11 +59,6 @@ logger = logging.getLogger(__name__)
 
 @app.get("/")
 async def root():
-    """Serve a simple HTML page for testing."""
-    # TODO: Implement this method
-    # 1. Return HTML with basic editor interface
-    # 2. Include JavaScript for WebSocket connection
-    # 3. Add basic styling
     pass
 
 
@@ -83,6 +81,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
         while True:
             data = await websocket.receive_json()
             document.apply_operation(data)
+            redis_pubsub.publish(data)
             await session_manager.broadcast(data, exclude_client=client_id)
     except WebSocketDisconnect:
         await session_manager.remove_session(client_id)

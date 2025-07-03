@@ -9,6 +9,8 @@ import json
 import uuid
 from typing import Dict, Any, Optional
 from datetime import datetime
+import logging
+import time
 
 
 def generate_client_id() -> str:
@@ -22,37 +24,24 @@ def generate_client_id() -> str:
 
 
 def validate_operation(operation: Dict[str, Any]) -> bool:
-    """
-    Validate an operation dictionary.
-    
-    Args:
-        operation: Operation to validate
-        
-    Returns:
-        True if operation is valid, False otherwise
-    """
-    # TODO: Implement this function
-    # 1. Check required fields exist
-    # 2. Validate operation type
-    # 3. Validate data types
-    # 4. Return validation result
-    pass
+    required_fields = {"type", "site_id", "logical_timestamp"}
+    if not isinstance(operation, dict):
+        return False
+    if not required_fields.issubset(operation.keys()):
+        return False
+    if operation["type"] not in ("insert", "delete"):
+        return False
+    if operation["type"] == "insert":
+        if not all(k in operation for k in ("char_id", "char", "parent_id")):
+            return False
+    if operation["type"] == "delete":
+        if "char_id" not in operation:
+            return False
+    return True
 
 
 def serialize_operation(operation: Dict[str, Any]) -> str:
-    """
-    Serialize an operation to JSON string.
-    
-    Args:
-        operation: Operation to serialize
-        
-    Returns:
-        JSON string representation
-    """
-    # TODO: Implement this function
-    # 1. Convert operation to JSON
-    # 2. Handle any serialization errors
-    pass
+    return json.dumps(operation)
 
 
 def deserialize_operation(data: str) -> Optional[Dict[str, Any]]:
@@ -69,38 +58,25 @@ def deserialize_operation(data: str) -> Optional[Dict[str, Any]]:
     # 1. Parse JSON string
     # 2. Handle parsing errors
     # 3. Return operation dict or None
-    pass
+    try:
+        return json.loads(data)
+    except Exception as e:
+        logging.error(f"Failed to deserialize operation: {e}")
+        return None
 
 
 def create_operation(operation_type: str, **kwargs) -> Dict[str, Any]:
-    """
-    Create a standardized operation dictionary.
-    
-    Args:
-        operation_type: Type of operation (insert/delete)
-        **kwargs: Additional operation parameters
-        
-    Returns:
-        Operation dictionary
-    """
-    # TODO: Implement this function
-    # 1. Create base operation structure
-    # 2. Add timestamp and operation ID
-    # 3. Add provided parameters
-    pass
+    op = {
+        "type": operation_type,
+        "site_id": kwargs.get("site_id", 0),
+        "logical_timestamp": kwargs.get("logical_timestamp", get_timestamp()),
+    }
+    op.update(kwargs)
+    return op
 
 
 def get_timestamp() -> int:
-    """
-    Get current timestamp in milliseconds.
-    
-    Returns:
-        Current timestamp
-    """
-    # TODO: Implement this function
-    # 1. Get current time
-    # 2. Convert to milliseconds
-    pass
+    return int(time.time() * 1000)
 
 
 def log_operation(operation: Dict[str, Any], client_id: str):
@@ -115,21 +91,11 @@ def log_operation(operation: Dict[str, Any], client_id: str):
     # 1. Format log message
     # 2. Include timestamp and client info
     # 3. Write to log
-    pass
+    ts = get_timestamp()
+    logging.info(f"[{ts}] Client {client_id}: {operation}")
 
 
 def calculate_position_offset(text: str, position: int) -> int:
-    """
-    Calculate the actual character offset for a given position.
-    
-    Args:
-        text: Current text content
-        position: Logical position in text
-        
-    Returns:
-        Actual character offset
-    """
-    # TODO: Implement this function
-    # 1. Handle edge cases (position < 0, position > len(text))
-    # 2. Return valid offset
-    pass 
+    position = max(0, position)
+    position = min(position, len(text))
+    return position

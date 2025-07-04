@@ -36,12 +36,20 @@ from fastapi.responses import JSONResponse
 from fastapi.responses import Response
 from app.metrics import crdt_operations_total, active_sessions, crdt_conflicts_resolved
 from app.redis_pubsub import RedisPubSub
+import os
+from app.document import Document
+from app.session import SessionManager
+from app.redis_pubsub import RedisPubSub
 
 
 app = FastAPI()
 document = Document()
-redis_pubsub = RedisPubSub(document)
 session_manager = SessionManager(document)
+
+if not os.environ.get("PYTEST_CURRENT_TEST"):
+    redis_pubsub = RedisPubSub(document)
+else:
+    redis_pubsub = None
 
 # Add CORS middleware
 app.add_middleware(
@@ -76,18 +84,7 @@ async def reset_document():
 
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
-    await session_manager.add_session(client_id, websocket)
-    try:
-        while True:
-            data = await websocket.receive_json()
-            document.apply_operation(data)
-            redis_pubsub.publish(data)
-            await session_manager.broadcast(data, exclude_client=client_id)
-    except WebSocketDisconnect:
-        await session_manager.remove_session(client_id)
-    except Exception as e:
-        logger.error(f"Error in WebSocket endpoint: {e}")
-        await session_manager.remove_session(client_id)
+    await session_manager.handle_websocket_connection(websocket, client_id)
 
 
 @app.get("/metrics")

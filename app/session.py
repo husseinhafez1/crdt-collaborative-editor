@@ -1,28 +1,9 @@
-"""
-Session Management Module
-This module handles WebSocket connections and client sessions.
-
-TODO: Implement the following:
-
-1. SessionManager class:
-   - __init__(self)
-   - add_session(self, client_id: str, websocket: WebSocket)
-   - remove_session(self, client_id: str)
-   - broadcast(self, message: dict, exclude_client: str = None)
-   - send_to_client(self, client_id: str, message: dict)
-
-2. WebSocket handling:
-   - Connection management
-   - Message routing
-   - Error handling
-   - Client disconnection cleanup
-"""
-
 import json
 import logging
 from typing import Dict, Set, Optional
 from fastapi import WebSocket, WebSocketDisconnect
 from app.metrics import crdt_operations_total, active_sessions, crdt_conflicts_resolved
+from app.utils import log_operation, validate_operation
 
 class SessionManager:    
     def __init__(self, document):
@@ -58,31 +39,28 @@ class SessionManager:
         return client_id in self.active_sessions
     
     async def handle_websocket_connection(self, websocket: WebSocket, client_id: str):
-        """
-        Handle a new WebSocket connection.
-        
-        Args:
-            websocket: WebSocket connection object
-            client_id: ID of the connecting client
-        """
-        # TODO: Implement this method
-        # 1. Accept the websocket connection
-        # 2. Add to session manager
-        # 3. Send welcome message
-        # 4. Handle incoming messages
-        # 5. Clean up on disconnect
-        pass
+        await self.add_session(client_id, websocket)
+        logging.info(f"Client {client_id} connected")
+        try:
+            while True:
+                message = await websocket.receive_json()
+                await self._handle_client_message(client_id, message)
+        except WebSocketDisconnect:
+            await self.remove_session(client_id)
+            logging.info(f"Client {client_id} disconnected")
+        except Exception as e:
+            logging.error(f"Error handling WebSocket connection for client {client_id}: {e}")
+            await self.remove_session(client_id)
+            logging.info(f"Client {client_id} disconnected due to error")
     
     async def _handle_client_message(self, client_id: str, message: dict):
-        """
-        Handle a message from a client.
-        
-        Args:
-            client_id: ID of the client sending the message
-            message: Message content
-        """
-        # TODO: Implement this method
-        # 1. Parse and validate message
-        # 2. Route to appropriate handler
-        # 3. Handle any errors
-        pass 
+        try:
+            if not validate_operation(message):
+                logging.error(f"Invalid operation received from client {client_id}: {message}")
+                return
+            await self.document.apply_operation(message)
+            log_operation(message, client_id)
+            await self.broadcast(message, client_id)
+        except Exception as e:
+            logging.error(f"Error processing message from client {client_id}: {e}")
+            await self.send_to_client(client_id, {"error": "Failed to process message"})

@@ -15,12 +15,13 @@ class TestCharacter:
     """Test the Character class."""
     
     def test_character_creation(self):
-        """Test creating a character with basic attributes."""
-        # TODO: Implement this test
-        # 1. Create a Character instance
-        # 2. Verify all attributes are set correctly
-        # 3. Check that id property generates unique ID
-        pass
+        char = Character("a", 1, 100)
+        assert char.char == "a"
+        assert char.site_id == 1
+        assert char.logical_timestamp == 100
+        assert not char.is_deleted
+        assert char.children == []
+        assert char.id.startswith("1:100:")
     
     def test_character_id_uniqueness(self):
         """Test that character IDs are unique."""
@@ -41,12 +42,14 @@ class TestRGACRDT:
         pass
     
     def test_initialization(self):
-        """Test CRDT initialization."""
-        # TODO: Implement this test
-        # 1. Verify site_id is set correctly
-        # 2. Check that root character exists
-        # 3. Verify initial state is empty
-        pass
+        crdt = RGACRDT(site_id=1)
+        op = crdt.insert(0, "A")
+        assert op["type"] == "insert"
+        assert op["char"] == "A"
+        assert crdt.get_text() == "A"
+        char_id = op["char_id"]
+        assert char_id in crdt.characters
+        assert crdt.characters[char_id].char == "A"
     
     def test_insert_single_character(self):
         """Test inserting a single character."""
@@ -66,13 +69,13 @@ class TestRGACRDT:
         pass
     
     def test_delete_character(self):
-        """Test deleting a character."""
-        # TODO: Implement this test
-        # 1. Insert a character
-        # 2. Delete it at position 0
-        # 3. Verify text is empty
-        # 4. Check character is marked as deleted
-        pass
+        crdt = RGACRDT(site_id=1)
+        crdt.insert(0, "B")
+        op = crdt.delete(0)
+        assert op["type"] == "delete"
+        assert crdt.get_text() == ""
+        char_id = op["char_id"]
+        assert crdt.characters[char_id].is_deleted
 
     def test_insert_delete_sequence(self):
         crdt1 = RGACRDT(site_id=1)

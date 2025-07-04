@@ -1,26 +1,6 @@
-"""
-Document Management Module
-This module handles document state and coordinates CRDT operations.
-
-TODO: Implement the following:
-
-1. Document class:
-   - __init__(self)
-   - apply_operation(self, operation: dict, client_id: str)
-   - get_state(self) -> dict
-   - reset(self)
-   - _broadcast_operation(self, operation: dict, exclude_client: str = None)
-
-2. Operation handling:
-   - Validate incoming operations
-   - Apply operations to CRDT
-   - Broadcast to other clients
-   - Handle operation ordering
-"""
-
 from .crdt import RGACRDT
 from .utils import log_operation, validate_operation
-from .redis_pubsub import redis_pubsub
+from .redis_pubsub import RedisPubSub
 
 
 class Document:

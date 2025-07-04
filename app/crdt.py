@@ -1,36 +1,3 @@
-"""
-CRDT (Conflict-Free Replicated Data Type) Implementation
-This module implements a Replicated Growable Array (RGA) for text sequences.
-
-Key concepts to understand:
-1. Each character needs a unique identifier (site_id + logical_timestamp + random_suffix)
-2. Characters are stored in a tree structure where each character points to its parent
-3. Insert operations place characters between existing ones
-4. Delete operations mark characters as deleted (tombstone approach)
-5. All operations must be commutative and associative
-
-TODO: Implement the following classes and methods:
-
-1. Character class:
-   - __init__(self, char: str, site_id: int, logical_timestamp: int, parent_id: str = None)
-   - Properties: char, site_id, logical_timestamp, parent_id, is_deleted, children
-
-2. RGACRDT class:
-   - __init__(self, site_id: int)
-   - insert(self, position: int, char: str) -> dict
-   - delete(self, position: int) -> dict
-   - apply_operation(self, operation: dict)
-   - get_text(self) -> str
-   - _find_insertion_position(self, position: int) -> str
-   - _generate_character_id(self, char: str) -> str
-   - _add_character(self, char: Character)
-   - _remove_character(self, char_id: str)
-
-3. Helper functions:
-   - compare_character_ids(id1: str, id2: str) -> int
-   - generate_unique_id(site_id: int, logical_timestamp: int) -> str
-"""
-
 import uuid
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass

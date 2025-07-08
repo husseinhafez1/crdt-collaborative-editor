@@ -1,10 +1,3 @@
-"""
-Utility functions for the CRDT collaborative editor.
-
-This module contains helper functions used across the application
-for validation, serialization, and common operations.
-"""
-
 import json
 import uuid
 from typing import Dict, Any, Optional
@@ -14,12 +7,6 @@ import time
 
 
 def generate_client_id() -> str:
-    """
-    Generate a unique client ID.
-    
-    Returns:
-        Unique client identifier string
-    """
     return f"client_{uuid.uuid4().hex[:8]}"
 
 
@@ -45,19 +32,6 @@ def serialize_operation(operation: Dict[str, Any]) -> str:
 
 
 def deserialize_operation(data: str) -> Optional[Dict[str, Any]]:
-    """
-    Deserialize an operation from JSON string.
-    
-    Args:
-        data: JSON string to deserialize
-        
-    Returns:
-        Operation dictionary or None if invalid
-    """
-    # TODO: Implement this function
-    # 1. Parse JSON string
-    # 2. Handle parsing errors
-    # 3. Return operation dict or None
     try:
         return json.loads(data)
     except Exception as e:
@@ -80,17 +54,6 @@ def get_timestamp() -> int:
 
 
 def log_operation(operation: Dict[str, Any], client_id: str):
-    """
-    Log an operation for debugging.
-    
-    Args:
-        operation: Operation to log
-        client_id: ID of the client performing the operation
-    """
-    # TODO: Implement this function
-    # 1. Format log message
-    # 2. Include timestamp and client info
-    # 3. Write to log
     ts = get_timestamp()
     logging.info(f"[{ts}] Client {client_id}: {operation}")
 

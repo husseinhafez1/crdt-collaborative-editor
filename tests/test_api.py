@@ -48,3 +48,16 @@ def test_reset_document():
     assert response.status_code == 200
     data = response.json()
     assert data["text"] == ""
+
+def test_websocket_invalid_operation():
+    with client.websocket_connect("/ws/testclient1") as websocket:
+        websocket.receive_json()
+        websocket.send_json({"type": "insert"})
+
+def test_reset_document_with_invalid_method():
+    response = client.get("/api/document/reset")
+    assert response.status_code in (405, 404)
+
+def test_websocket_disconnect():
+    with client.websocket_connect("/ws/testclient1") as websocket:
+        websocket.receive_json()

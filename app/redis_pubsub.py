@@ -2,10 +2,13 @@ import asyncio
 import json
 import threading
 import redis
+import os
 
 
 class RedisPubSub:
-    def __init__(self, document, channel="crdt-ops", redis_url="redis://localhost:6379/0"):
+    def __init__(self, document, channel="crdt-ops", redis_url=None):
+        if redis_url is None:
+            redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
         self.document = document
         self.channel = channel
         self.redis = redis.Redis.from_url(redis_url, decode_responses=True)

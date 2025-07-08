@@ -1,151 +1,154 @@
-# CRDT Collaborative Text Editor
+# 📝 CRDT Collaborative Editor Backend
 
-A real-time collaborative text editor built with Conflict-Free Replicated Data Types (CRDTs) in Python. This project demonstrates advanced distributed systems concepts and algorithmic complexity that are highly valued in FAANG interviews.
+A real-time collaborative text editor backend built with **FastAPI**, **CRDT (Replicated Growable Array)**, and **Redis Pub/Sub**.  
+This system enables multiple users to concurrently edit a shared document with strong consistency, low latency, and distributed synchronization.
 
-## 🎯 Why This Project Matters
+---
 
-- **Distributed Consistency**: Implements CRDTs to handle concurrent edits without conflicts
-- **Real-time Collaboration**: Multiple users can edit simultaneously with automatic conflict resolution
-- **Algorithm-Heavy**: Pure algorithmic implementation of CRDT logic, not just glued libraries
-- **Industry Relevance**: Similar to Google Docs, VSCode Live Share, Notion, etc.
+## 🚀 Features
 
-## 🏗️ Architecture
+- 🔄 Real-time collaboration via WebSockets  
+- 🧠 CRDT-based document model (Replicated Growable Array - RGA)  
+- 🌐 REST API for state access and reset  
+- 🛰️ Redis Pub/Sub for distributed multi-instance coordination  
+- 📊 Prometheus metrics for observability  
+- ✅ Comprehensive tests for REST and WebSocket endpoints  
 
-### Core Components
+---
 
-1. **CRDT Implementation** (`app/crdt.py`): Replicated Growable Array (RGA) for text sequences
-2. **Document Management** (`app/document.py`): Document state and operation handling
-3. **Session Management** (`app/session.py`): Client session and WebSocket handling
-4. **API Layer** (`app/main.py`): FastAPI with REST and WebSocket endpoints
+## ⚙️ Architecture Overview
 
-### CRDT Algorithm
+- **CRDT Logic** — Handles insert/delete operations using RGA (tombstone-based).  
+- **Document Management** — Tracks current state and active client sessions.  
+- **Session Manager** — Manages WebSocket connections, routes operations.  
+- **Redis Pub/Sub** — Broadcasts operations across multiple backend instances.  
+- **FastAPI** — Provides REST and WebSocket interfaces.  
 
-The editor uses a **Replicated Growable Array (RGA)** CRDT:
-- Each character has a unique identifier (site ID + logical timestamp)
-- Characters are ordered in a tree structure
-- Insert operations place characters between existing ones
-- Delete operations mark characters as deleted (tombstone approach)
-- All operations are commutative and associative
 
-## 🚀 Quick Start
+```
+[Client] <-- WebSocket --> [FastAPI Backend] <-- Redis Pub/Sub --> [Other Backend Instances]
+```
 
-### Prerequisites
-- Python 3.8+
-- Redis (optional, for multi-instance simulation)
+---
 
-### Installation
+## 🛠️ Setup Instructions
+
+### 1. Clone the Repository
 
 ```bash
-# Clone the repository
-git clone <repository-url>
+git clone https://github.com/husseinhafez1/crdt-collaborative-editor.git
 cd crdt-collaborative-editor
+```
 
-# Install dependencies
+### 2. Create and Activate a Virtual Environment
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 3. Install Dependencies
+
+```bash
 pip install -r requirements.txt
-
-# Run the application
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Usage
-
-1. **Start the server**: `uvicorn app.main:app --reload`
-2. **Open multiple browser tabs** to `http://localhost:8000`
-3. **Start typing** in different tabs to see real-time collaboration
-4. **Use the REST API** to fetch document state: `GET /api/document`
-
-## 📡 API Endpoints
-
-### REST API
-- `GET /api/document` - Get current document state
-- `POST /api/document/reset` - Reset document to empty state
-
-### WebSocket API
-- `WS /ws/{client_id}` - Real-time collaboration endpoint
-- Send operations: `{"type": "insert", "position": 0, "char": "a"}`
-- Send operations: `{"type": "delete", "position": 0}`
-
-## 🧪 Testing
+### 4. Start Redis (for distributed mode)
 
 ```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=app
-
-# Run specific test file
-pytest tests/test_crdt.py
+redis-server
 ```
 
-## 🐳 Docker Deployment
+### 5. Run the Backend Server
 
 ```bash
-# Build the image
-docker build -t crdt-editor .
-
-# Run the container
-docker run -p 8000:8000 crdt-editor
+uvicorn app.main:app --reload
 ```
 
-## 🔧 Configuration
+----------
 
-### Environment Variables
-- `REDIS_URL`: Redis connection string (optional)
-- `LOG_LEVEL`: Logging level (default: INFO)
+###  Run with Docker Compose (Backend + Redis)
 
-## 📊 Monitoring
+```bash
+docker-compose up --build
+```
 
-The application includes Prometheus metrics:
-- `crdt_operations_total`: Total number of CRDT operations
-- `crdt_conflicts_resolved`: Number of conflicts resolved
-- `active_sessions`: Number of active WebSocket sessions
+Access the backend at: [http://localhost:8000](http://localhost:8000/)
 
-Access metrics at: `http://localhost:8000/metrics`
+----------
 
-## 🧠 CRDT Algorithm Details
+##  API Usage
 
-### Character Identifiers
-Each character has a unique ID: `(site_id, logical_timestamp, random_suffix)`
+### REST Endpoints
 
-### Insert Operation
-1. Generate unique character ID
-2. Find insertion position in the tree
-3. Insert character as child of the position's parent
-4. Broadcast operation to all clients
+-   `GET /api/document` — Fetch current document state
+    
+-   `POST /api/document/reset` — Reset document to initial state
+    
+-   `GET /metrics` — Prometheus-compatible metrics
+    
 
-### Delete Operation
-1. Mark character as deleted (tombstone)
-2. Character remains in tree but is not displayed
-3. Broadcast deletion to all clients
+### WebSocket Endpoint
 
-### Conflict Resolution
-- Operations are commutative and associative
-- No manual conflict resolution needed
-- System automatically converges to consistent state
+-   `ws://<host>:<port>/ws/{client_id}` — Real-time collaboration
+    
+-   On connection: Client receives full document state
+    
+-   Clients send/receive CRDT operations (insert/delete)
+    
 
-## 🎯 Stretch Goals
+#### Example Operation (Insert)
 
-- [ ] Redis integration for multi-instance deployment
-- [ ] Text formatting support (bold, italic, etc.)
-- [ ] CLI tool for testing collaboration
-- [ ] Performance optimization for large documents
-- [ ] Cursor position synchronization
+```json
+{
+  "type": "insert",
+  "char_id": "1:1:abc123",
+  "char": "A",
+  "parent_id": "root",
+  "site_id": 1,
+  "logical_timestamp": 1
+}
 
-## 📚 Learning Resources
+```
 
-- [CRDTs: The Hard Parts](https://martin.kleppmann.com/2020/07/06/crdt-hard-parts-hydra.html)
-- [A comprehensive study of CRDTs](https://hal.inria.fr/hal-00932833/file/CRDTs_SSS-2011.pdf)
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+----------
 
-## 🤝 Contributing
+##  Testing
 
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit a pull request
+Run all tests with:
 
-## 📄 License
+```bash
+pytest tests/
+```
 
-MIT License - see LICENSE file for details. 
+-   Tests cover:
+    
+    -   REST endpoints
+        
+    -   WebSocket operations
+        
+    -   Error handling & edge cases
+        
+-   Each test starts with a fresh document state for isolation.
+    
+
+----------
+
+## Project Structure
+
+```
+app/
+├── crdt.py           # CRDT logic (RGA)
+├── document.py       # Document state management
+├── session.py        # WebSocket session handling
+├── redis_pubsub.py   # Redis Pub/Sub integration
+├── utils.py          # Helpers (serialization, validation, etc.)
+├── main.py           # FastAPI app with routes
+├── metrics.py        # Prometheus integration (optional)
+tests/
+└── test_api.py       # Unit tests for API and WebSocket logic
+
+Dockerfile            # Docker build
+docker-compose.yml    # Orchestration for backend + Redis
+requirements.txt      # Python dependencies
+```

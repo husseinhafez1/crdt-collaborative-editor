@@ -18,7 +18,7 @@ class Character:
         if self.children is None:
             self.children = []
         if self.id is None:
-            self.id = f"{self.site_id}:{self.logical_timestamp}:{uuid.uuid4().hex[:8]}"
+            self.id = generate_unique_id(self.site_id, self.logical_timestamp)
 
 
 class RGACRDT:
@@ -153,17 +153,5 @@ def compare_character_ids(id1: str, id2: str) -> int:
     return 0
 
 def generate_unique_id(site_id: int, logical_timestamp: int) -> str:
-    """
-    Generate a unique character ID.
-    
-    Args:
-        site_id: Site identifier
-        logical_timestamp: Logical timestamp
-        
-    Returns:
-        Unique character ID string
-    """
-    # TODO: Implement this method
-    # 1. Combine site_id, logical_timestamp, and random suffix
-    # 2. Return formatted string
-    pass 
+    random_suffix = uuid.uuid4().hex[:8]
+    return f"{site_id}:{logical_timestamp}:{random_suffix}"

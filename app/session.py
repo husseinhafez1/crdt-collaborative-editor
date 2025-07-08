@@ -58,7 +58,7 @@ class SessionManager:
             if not validate_operation(message):
                 logging.error(f"Invalid operation received from client {client_id}: {message}")
                 return
-            await self.document.apply_operation(message)
+            self.document.apply_operation(message)
             log_operation(message, client_id)
             await self.broadcast(message, client_id)
         except Exception as e:

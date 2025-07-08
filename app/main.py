@@ -92,13 +92,6 @@ async def metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
-# TODO: Add helper functions for:
-# - Message validation
-# - Error handling
-# - Operation routing
-# - Client notification
-
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000) 
